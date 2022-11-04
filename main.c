@@ -4,7 +4,6 @@
 #include <pthread.h>
 #include <string.h>
 
-
 pthread_mutex_t rng_mutex;
 
 int thread_safe_rng(int min, int max) {
@@ -154,14 +153,27 @@ void exitLane(int firstIntersection, int secondIntersection) {
 // Starvation: No train should be starved from entering the lane.
 
 void trainThreadFunction(void* arg)
-{
+{   
     printf("TTF Function running .. \n");
-    printf("%s\n",arg);
     /* TODO extract arguments from the `void* arg` */
     int firstIntersection = 0;
-    char direction = '_';
+    printf("First intersection init'd to %d\n", firstIntersection);
+    char direction = *((char *)arg);
+    printf("%c\n",direction);
     int secondIntersection = 0;
-
+    if(direction=='N'){
+        firstIntersection = 1;
+    }else if(direction=='E'){
+        firstIntersection = 4;
+    }else if(direction=='S'){
+        firstIntersection = 3;
+    }else if(direction=='W'){
+        firstIntersection = 2;
+    }else{
+        printf("Illegal direction\n");
+        return;
+    }
+    printf("Second intersection init'd to %d\n", secondIntersection);
     if(firstIntersection==1){
         secondIntersection = 2;
     }else if(firstIntersection==2){
@@ -309,17 +321,20 @@ int main(int argc, char *argv[]) {
             printf("Usage: ./main <train dirs: [NSEW]+>\n");
             return 1;
         }
-        char* args = trainDir;
+        char *arg = (char *)malloc((sizeof(char)));
+        *arg = trainDir;
         printf("trainDir %c\n", trainDir);
         /* TODO create a thread for the train using trainThreadFunction */
-        pthread_create(&train_threads[num_trains], NULL, trainThreadFunction, args);
+        pthread_create(&train_threads[num_trains], NULL, trainThreadFunction, (void *)arg);
 
         num_trains++;
     }
 
     /* TODO: join with all train threads*/
     for(int i=0; i<num_trains; i++){
-        pthread_join(train_threads[i], NULL);
+        printf("Joining... \n");
+        void* buf;
+        pthread_join(train_threads[i], &buf);
     }
 
     return 0;

@@ -23,34 +23,42 @@ pthread_mutex_t intersection1 = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t intersection2 = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t intersection3 = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t intersection4 = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t int1con  = PTHREAD_COND_INITIALIZER;
-pthread_cond_t int2con  = PTHREAD_COND_INITIALIZER;
-pthread_cond_t int3con  = PTHREAD_COND_INITIALIZER;
-pthread_cond_t int4con  = PTHREAD_COND_INITIALIZER;
+pthread_cond_t int1closed  = PTHREAD_COND_INITIALIZER;
+pthread_cond_t int1open  = PTHREAD_COND_INITIALIZER;
+pthread_cond_t int2closed  = PTHREAD_COND_INITIALIZER;
+pthread_cond_t int2open  = PTHREAD_COND_INITIALIZER;
+pthread_cond_t int3closed  = PTHREAD_COND_INITIALIZER;
+pthread_cond_t int3open  = PTHREAD_COND_INITIALIZER;
+pthread_cond_t int4closed  = PTHREAD_COND_INITIALIZER;
+pthread_cond_t int4open  = PTHREAD_COND_INITIALIZER;
 
 
 // arriveLane() is called when the train's front end reaches the first intersection
 void arriveLane(int firstIntersection) {
     if(firstIntersection==1){
         while(locked1==1){
-            pthread_cond_wait(&int1con, &intersection1);
+            pthread_cond_wait(&int1open, &intersection1);
         }
         locked1 = 1;
+        pthread_cond_signal(&int1closed);
     }else if(firstIntersection==2){
         while(locked2==1){
-            pthread_cond_wait(&int2con, &intersection2);
+            pthread_cond_wait(&int2open, &intersection2);
         }
         locked2 = 1;
+        pthread_cond_signal(&int2closed);
     }else if(firstIntersection==3){
         while(locked3==1){
-            pthread_cond_wait(&int3con, &intersection3);
+            pthread_cond_wait(&int3open, &intersection3);
         }
         locked3 = 1;
+        pthread_cond_signal(&int3closed);
     }else if(firstIntersection==4){
         while(locked4==1){
-            pthread_cond_wait(&int4con, &intersection4);
+            pthread_cond_wait(&int4open, &intersection4);
         }
         locked4 = 1;
+        pthread_cond_signal(&int4closed);
     }else{
         printf("Illegal first intersection identifier\n");
         return;
@@ -63,24 +71,28 @@ void crossLane(int secondIntersection) {
     /* TODO: add code here */
     if(secondIntersection==1){
         while(locked1==1){
-            pthread_cond_wait(&int1con, &intersection1);
+            pthread_cond_wait(&int1open, &intersection1);
         }
         locked1 = 1;
+        pthread_cond_signal(&int1closed);
     }else if(secondIntersection==2){
         while(locked2==1){
-            pthread_cond_wait(&int2con, &intersection2);
+            pthread_cond_wait(&int2open, &intersection2);
         }
         locked2 = 1;
+        pthread_cond_signal(&int2closed);
     }else if(secondIntersection==3){
         while(locked3==1){
-            pthread_cond_wait(&int3con, &intersection3);
+            pthread_cond_wait(&int3open, &intersection3);
         }
         locked3 = 1;
+        pthread_cond_signal(&int3closed);
     }else if(secondIntersection==4){
         while(locked4==1){
-            pthread_cond_wait(&int4con, &intersection4);
+            pthread_cond_wait(&int4open, &intersection4);
         }
         locked4 = 1;
+        pthread_cond_signal(&int4closed);
     }else{
         printf("Illegal second intersection identifier\n");
         return;
@@ -93,49 +105,57 @@ void crossLane(int secondIntersection) {
 void exitLane(int firstIntersection, int secondIntersection) {
     /* TODO: add code here */
     if(firstIntersection==1){
-        while(locked1==1){
-            pthread_cond_wait(&int1con, &intersection1);
-        }
+        // while(locked1==1){
+        //     pthread_cond_wait(&int1closed, &intersection1);
+        // }
         locked1 = 0;
+        pthread_cond_signal(&int1open);
     }else if(firstIntersection==2){
-        while(locked2==1){
-            pthread_cond_wait(&int2con, &intersection2);
-        }
+        // while(locked2==1){
+        //     pthread_cond_wait(&int2con, &intersection2);
+        // }
         locked2 = 0;
+        pthread_cond_signal(&int2open);
     }else if(firstIntersection==3){
-        while(locked3==1){
-            pthread_cond_wait(&int3con, &intersection3);
-        }
+        // while(locked3==1){
+        //     pthread_cond_wait(&int3con, &intersection3);
+        // }
         locked3 = 0;
+        pthread_cond_signal(&int3open);
     }else if(firstIntersection==4){
-        while(locked4==1){
-            pthread_cond_wait(&int4con, &intersection4);
-        }
+        // while(locked4==1){
+        //     pthread_cond_wait(&int4con, &intersection4);
+        // }
         locked4 = 0;
+        pthread_cond_signal(&int4open);
     }else{
         printf("Illegal first intersection identifier\n");
         return;
     }
     if(secondIntersection==1){
-        while(locked1==1){
-            pthread_cond_wait(&int1con, &intersection1);
-        }
+        // while(locked1==1){
+        //     pthread_cond_wait(&int1con, &intersection1);
+        // }
         locked1 = 0;
+        pthread_cond_signal(&int1open);
     }else if(secondIntersection==2){
-        while(locked2==1){
-            pthread_cond_wait(&int2con, &intersection2);
-        }
+        // while(locked2==1){
+        //     pthread_cond_wait(&int2con, &intersection2);
+        // }
         locked2 = 0;
+        pthread_cond_signal(&int2open);
     }else if(secondIntersection==3){
-        while(locked3==1){
-            pthread_cond_wait(&int3con, &intersection3);
-        }
+        // while(locked3==1){
+        //     pthread_cond_wait(&int3con, &intersection3);
+        // }
         locked3 = 0;
+        pthread_cond_signal(&int3open);
     }else if(secondIntersection==4){
-        while(locked4==1){
-            pthread_cond_wait(&int4con, &intersection4);
-        }
+        // while(locked4==1){
+        //     pthread_cond_wait(&int4con, &intersection4);
+        // }
         locked4 = 0;
+        pthread_cond_signal(&int4open);
     }else{
         printf("Illegal first intersection identifier\n");
         return;
@@ -279,7 +299,6 @@ void deadLockResolverThreadFunction(void * arg) {
     printf("Background deadlock detector is running...\n");
     while (1) {
         /* TODO add code to detect deadlock and resolve if any */
-
         int deadLockDetected = 0; // TODO set to 1 if deadlock is detected
 
         if (deadLockDetected) {

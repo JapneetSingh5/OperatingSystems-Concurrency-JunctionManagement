@@ -6,6 +6,11 @@
 
 pthread_mutex_t rng_mutex;
 
+typedef struct {
+    char trainDir;
+    int trainNo;
+} myarg_t;
+
 int thread_safe_rng(int min, int max) {
     pthread_mutex_lock(&rng_mutex);
     int r = rand();
@@ -34,30 +39,30 @@ pthread_cond_t int4open  = PTHREAD_COND_INITIALIZER;
 
 
 // arriveLane() is called when the train's front end reaches the first intersection
-void arriveLane(int firstIntersection) {
+void arriveLane(int firstIntersection, int trainNo) {
     if(firstIntersection==1){
-        while(locked1==1){
+        while(locked1!=0){
             pthread_cond_wait(&int1open, &intersection1);
         }
-        locked1 = 1;
+        locked1 = trainNo;
         pthread_cond_signal(&int1closed);
     }else if(firstIntersection==2){
-        while(locked2==1){
+        while(locked2!=0){
             pthread_cond_wait(&int2open, &intersection2);
         }
-        locked2 = 1;
+        locked2 = trainNo;
         pthread_cond_signal(&int2closed);
     }else if(firstIntersection==3){
-        while(locked3==1){
+        while(locked3!=0){
             pthread_cond_wait(&int3open, &intersection3);
         }
-        locked3 = 1;
+        locked3 = trainNo;
         pthread_cond_signal(&int3closed);
     }else if(firstIntersection==4){
-        while(locked4==1){
+        while(locked4!=0){
             pthread_cond_wait(&int4open, &intersection4);
         }
-        locked4 = 1;
+        locked4 = trainNo;
         pthread_cond_signal(&int4closed);
     }else{
         printf("Illegal first intersection identifier\n");
@@ -67,31 +72,31 @@ void arriveLane(int firstIntersection) {
 }
 
 // crossLane() is called when the train is crossing the lane, post arrivel/arriveLane()
-void crossLane(int secondIntersection) {
+void crossLane(int secondIntersection, int trainNo) {
     /* TODO: add code here */
     if(secondIntersection==1){
-        while(locked1==1){
+        while(locked1!=0){
             pthread_cond_wait(&int1open, &intersection1);
         }
-        locked1 = 1;
+        locked1 = trainNo;
         pthread_cond_signal(&int1closed);
     }else if(secondIntersection==2){
-        while(locked2==1){
+        while(locked2!=0){
             pthread_cond_wait(&int2open, &intersection2);
         }
-        locked2 = 1;
+        locked2 = trainNo;
         pthread_cond_signal(&int2closed);
     }else if(secondIntersection==3){
-        while(locked3==1){
+        while(locked3!=0){
             pthread_cond_wait(&int3open, &intersection3);
         }
-        locked3 = 1;
+        locked3 = trainNo;
         pthread_cond_signal(&int3closed);
     }else if(secondIntersection==4){
-        while(locked4==1){
+        while(locked4!=0){
             pthread_cond_wait(&int4open, &intersection4);
         }
-        locked4 = 1;
+        locked4 = trainNo;
         pthread_cond_signal(&int4closed);
     }else{
         printf("Illegal second intersection identifier\n");
@@ -172,54 +177,49 @@ void exitLane(int firstIntersection, int secondIntersection) {
 // Liveness: The system is not stuck forever.
 // Starvation: No train should be starved from entering the lane.
 
-void trainThreadFunction(void* arg)
+void *trainThreadFunction(void* arg)
 {   
-    printf("TTF Function running .. \n");
     /* TODO extract arguments from the `void* arg` */
     int firstIntersection = 0;
-    printf("First intersection init'd to %d\n", firstIntersection);
-    char direction = *((char *)arg);
-    printf("%c\n",direction);
-    int secondIntersection = 0;
-    if(direction=='N'){
-        firstIntersection = 1;
-    }else if(direction=='E'){
-        firstIntersection = 4;
-    }else if(direction=='S'){
-        firstIntersection = 3;
-    }else if(direction=='W'){
-        firstIntersection = 2;
-    }else{
-        printf("Illegal direction\n");
-        return;
-    }
-    printf("Second intersection init'd to %d\n", secondIntersection);
-    if(firstIntersection==1){
-        secondIntersection = 2;
-    }else if(firstIntersection==2){
-        secondIntersection = 3;
-    }else if(firstIntersection==3){
-        secondIntersection = 4;
-    }else if(firstIntersection==4){
-        secondIntersection = 1;
-    }
 
-    usleep(thread_safe_rng(0, 10000)); // start at random time
+    myarg_t *args = (myarg_t *) arg;
+    char direction = args->trainDir;
+    int trainNo = args->trainNo;
+    printf("TTF Function running .. %d %c\n", trainNo, direction);
+
+    int secondIntersection = 0;
 
     char* trainDir = NULL; // TODO set the direction of the train: North/South/East/West.
-    
+    char* trainDirExit = NULL; // TODO set the direction of the train: North/South/East/West.
+
     if(direction=='N'){
+        firstIntersection = 1;
+        secondIntersection = 2;
         trainDir = "North";
-    }else if(direction=='S'){
-        trainDir = "South";
+        trainDirExit = "South";
     }else if(direction=='E'){
+        firstIntersection = 4;
+        secondIntersection = 1; 
         trainDir = "East";
+        trainDirExit = "West";       
+    }else if(direction=='S'){
+        firstIntersection = 3;
+        secondIntersection = 4;
+        trainDir = "South";
+        trainDirExit = "North";
     }else if(direction=='W'){
+        firstIntersection = 2;
+        secondIntersection = 3;
         trainDir = "West";
+        trainDirExit = "East";
     }else{
         printf("Illegal direction\n");
-        return;
+        return NULL;
     }
+    printf("First intersection init'd to %d\n", firstIntersection);
+    printf("Second intersection init'd to %d\n", secondIntersection);
+
+    usleep(thread_safe_rng(0, 10000)); // start at random time
 
     if(firstIntersection==1){
         pthread_mutex_lock(&intersection1);
@@ -231,10 +231,11 @@ void trainThreadFunction(void* arg)
         pthread_mutex_lock(&intersection4);
     }else{
         printf("Illegal first intersection identifier\n");
-        return;
+        return NULL;
     }
 
-    arriveLane(firstIntersection);
+    arriveLane(firstIntersection, trainNo);
+
     printf("Train Arrived at the lane from the %s direction\n", trainDir);
 
     if(secondIntersection==1){
@@ -247,24 +248,11 @@ void trainThreadFunction(void* arg)
         pthread_mutex_lock(&intersection4);
     }else{
         printf("Illegal second intersection identifier\n");
-        return;
+        return NULL;
     }
-    crossLane(secondIntersection);
+    crossLane(secondIntersection, trainNo);
 
-    if(direction=='N'){
-        trainDir = "South";
-    }else if(direction=='S'){
-        trainDir = "North";
-    }else if(direction=='E'){
-        trainDir = "West";
-    }else if(direction=='W'){
-        trainDir = "East";
-    }else{
-        printf("Illegal direction\n");
-        return;
-    }
-
-    printf("Train Exited the lane from the %s direction\n", trainDir);
+    printf("Train Exited the lane from the %s direction\n", trainDirExit);
     exitLane(firstIntersection, secondIntersection);
 
     if(firstIntersection==1){
@@ -277,7 +265,7 @@ void trainThreadFunction(void* arg)
         pthread_mutex_unlock(&intersection4);
     }else{
         printf("Illegal first intersection identifier\n");
-        return;
+        return NULL;
     }
 
     if(secondIntersection==1){
@@ -290,17 +278,21 @@ void trainThreadFunction(void* arg)
         pthread_mutex_unlock(&intersection4);
     }else{
         printf("Illegal second intersection identifier\n");
-        return;
+        return NULL;
     }
+
+    return NULL;
 }
 
-void deadLockResolverThreadFunction(void * arg) {
+void *deadLockResolverThreadFunction(void * arg) {
     /* TODO extract arguments from the `void* arg` */
     printf("Background deadlock detector is running...\n");
     while (1) {
         /* TODO add code to detect deadlock and resolve if any */
         int deadLockDetected = 0; // TODO set to 1 if deadlock is detected
-
+        if(locked1!=locked2 && locked2!=locked3 && locked3!=locked4 && locked4!=locked1){
+            deadLockDetected = 1;
+        }
         if (deadLockDetected) {
             printf("Deadlock detected. Resolving deadlock...\n");
             /* TODO add code to resolve deadlock */
@@ -308,6 +300,7 @@ void deadLockResolverThreadFunction(void * arg) {
 
         usleep(1000 * 500); // sleep for 500 ms
     }
+    return NULL;
 }
 
 int main(int argc, char *argv[]) {
@@ -334,19 +327,20 @@ int main(int argc, char *argv[]) {
     pthread_t train_threads[total_num_trains];
     while (train[num_trains] != '\0') {
         char trainDir = train[num_trains];
+        int trainIndex = num_trains;
+        myarg_t args = { trainDir, (trainIndex + 1) };
 
         if (trainDir != 'N' && trainDir != 'S' && trainDir != 'E' && trainDir != 'W') {
             printf("Invalid train direction: %c\n", trainDir);
             printf("Usage: ./main <train dirs: [NSEW]+>\n");
             return 1;
         }
-        char *arg = (char *)malloc((sizeof(char)));
-        *arg = trainDir;
-        printf("trainDir %c\n", trainDir);
+        
+        printf("trainDir %c no %d %d\n", args.trainDir, args.trainNo, num_trains);
         /* TODO create a thread for the train using trainThreadFunction */
-        pthread_create(&train_threads[num_trains], NULL, trainThreadFunction, (void *)arg);
-
-        num_trains++;
+        pthread_create(&train_threads[trainIndex], NULL, trainThreadFunction, &args);
+        printf("trainDir %c no %d %d\n", args.trainDir, args.trainNo, num_trains);
+        num_trains = num_trains + 1;
     }
 
     /* TODO: join with all train threads*/

@@ -27,20 +27,20 @@ volatile int locked3 = 0;
 volatile int locked4 = 0;
 volatile int signalled = 0;
 volatile int deadlockTrainNo = 0;
-volatile int deadlockIntersectionNo = 0;
+volatile int deadlockIntersectionNo = 2;
 pthread_mutex_t deadlockResolve = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t intersection1 = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t intersection2 = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t intersection3 = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t intersection4 = PTHREAD_MUTEX_INITIALIZER;
-// pthread_cond_t int1closed  = PTHREAD_COND_INITIALIZER;
 pthread_cond_t int1open  = PTHREAD_COND_INITIALIZER;
-// pthread_cond_t int2closed  = PTHREAD_COND_INITIALIZER;
 pthread_cond_t int2open  = PTHREAD_COND_INITIALIZER;
-// pthread_cond_t int3closed  = PTHREAD_COND_INITIALIZER;
 pthread_cond_t int3open  = PTHREAD_COND_INITIALIZER;
-// pthread_cond_t int4closed  = PTHREAD_COND_INITIALIZER;
 pthread_cond_t int4open  = PTHREAD_COND_INITIALIZER;
+pthread_cond_t int1open2  = PTHREAD_COND_INITIALIZER;
+pthread_cond_t int2open2  = PTHREAD_COND_INITIALIZER;
+pthread_cond_t int3open2  = PTHREAD_COND_INITIALIZER;
+pthread_cond_t int4open2  = PTHREAD_COND_INITIALIZER;
 
 
 // arriveLane() is called when the train's front end reaches the first intersection
@@ -82,60 +82,53 @@ void arriveLane(int firstIntersection, int trainNo) {
         if(debug==1) printf("Illegal first intersection identifier\n");
         return;
     }
-
-    /* TODO: add code here */
 }
 
 // crossLane() is called when the train is crossing the lane, post arrivel/arriveLane()
 void crossLane(int firstIntersection, int secondIntersection, int trainNo) {
-    /* TODO: add code here */
     if(firstIntersection==1){
         pthread_mutex_lock(&intersection2);
-        while(locked2!=0){
-            pthread_cond_wait(&int2open, &intersection2);
+        while(locked2!=0 && deadlockTrainNo!=trainNo){
+            pthread_cond_wait(&int2open2, &intersection2);
         }
         if(deadlockTrainNo==trainNo && deadlockIntersectionNo==1){
             pthread_mutex_unlock(&intersection2);
             return;
         }
         locked2 = trainNo;
-        // pthread_cond_signal(&int2closed);
         pthread_mutex_unlock(&intersection2);
     }else if(firstIntersection==2){
         pthread_mutex_lock(&intersection3);
         while(locked3!=0 && deadlockTrainNo!=trainNo){
-            pthread_cond_wait(&int3open, &intersection3);
+            pthread_cond_wait(&int3open2, &intersection3);
         }
         if(deadlockTrainNo==trainNo && deadlockIntersectionNo==2){
             pthread_mutex_unlock(&intersection3);
             return;
         }
         locked3 = trainNo;
-        // pthread_cond_signal(&int3closed);
         pthread_mutex_unlock(&intersection3);
     }else if(firstIntersection==3){
         pthread_mutex_lock(&intersection4);
-        while(locked4!=0){
-            pthread_cond_wait(&int4open, &intersection4);
+        while(locked4!=0 && deadlockTrainNo!=trainNo){
+            pthread_cond_wait(&int4open2, &intersection4);
         }
         if(deadlockTrainNo==trainNo && deadlockIntersectionNo==3){
             pthread_mutex_unlock(&intersection4);
             return;
         }
         locked4 = trainNo;
-        // pthread_cond_signal(&int4closed);
         pthread_mutex_unlock(&intersection4);
     }else if(firstIntersection==4){
         pthread_mutex_lock(&intersection1);
-        while(locked1!=0){
-            pthread_cond_wait(&int1open, &intersection1);
+        while(locked1!=0 && deadlockTrainNo!=trainNo){
+            pthread_cond_wait(&int1open2, &intersection1);
         }
         if(deadlockTrainNo==trainNo && deadlockIntersectionNo==4){
             pthread_mutex_unlock(&intersection1);
             return;
         }
         locked1 = trainNo;
-        // pthread_cond_signal(&int1closed);
         pthread_mutex_unlock(&intersection1);
     }else{
         if(debug==1) printf("Illegal first intersection identifier\n");
@@ -147,82 +140,98 @@ void crossLane(int firstIntersection, int secondIntersection, int trainNo) {
 
 // exitLane() is called when the complete train exits the lane 
 void exitLane(int firstIntersection, int secondIntersection, int trainNo) {
-    /* TODO: add code here */
     if(firstIntersection==1){
-        // while(locked1==1){
-        //     pthread_cond_wait(&int1closed, &intersection1);
-        // }
         pthread_mutex_lock(&intersection1);
+        pthread_mutex_lock(&intersection2);
         if(deadlockTrainNo==trainNo && deadlockIntersectionNo==1){
             deadlockTrainNo = 0;
             locked1 = 0;
+            pthread_cond_signal(&int1open2);
+            // pthread_cond_signal(&int2open2);
             pthread_cond_signal(&int1open);
-            pthread_cond_signal(&int2open);
-            pthread_mutex_unlock(&intersection1);
+            // pthread_cond_signal(&int2open);
             signalled = 0;
+            pthread_mutex_unlock(&intersection2);
+            pthread_mutex_unlock(&intersection1);
             return;
         }
         locked1 = 0;
         locked2 = 0;
+        pthread_cond_signal(&int1open2);
+        pthread_cond_signal(&int2open2);
         pthread_cond_signal(&int1open);
         pthread_cond_signal(&int2open);
+        pthread_mutex_unlock(&intersection2);
         pthread_mutex_unlock(&intersection1);
     }else if(firstIntersection==2){
-        // while(locked2==1){
-        //     pthread_cond_wait(&int2con, &intersection2);
-        // }
         pthread_mutex_lock(&intersection2);
+        pthread_mutex_lock(&intersection3);
         if(deadlockTrainNo==trainNo && deadlockIntersectionNo==2){
             deadlockTrainNo = 0;
             locked2 = 0;
+            // pthread_cond_signal(&int2open2);
+            // pthread_cond_signal(&int3open2);
+            pthread_cond_signal(&int2open2);
             pthread_cond_signal(&int2open);
-            pthread_cond_signal(&int3open);
-            pthread_mutex_unlock(&intersection2);
+            // pthread_cond_signal(&int3open);
             signalled = 0;
+            pthread_mutex_unlock(&intersection3);
+            pthread_mutex_unlock(&intersection2);
             return;
         }
         locked2 = 0;
         locked3 = 0;
+        pthread_cond_signal(&int2open2);
+        pthread_cond_signal(&int3open2);
         pthread_cond_signal(&int2open);
         pthread_cond_signal(&int3open);
+        pthread_mutex_unlock(&intersection3);
         pthread_mutex_unlock(&intersection2);
     }else if(firstIntersection==3){
-        // while(locked3==1){
-        //     pthread_cond_wait(&int3con, &intersection3);
-        // }
         pthread_mutex_lock(&intersection3);
+        pthread_mutex_lock(&intersection4);
         if(deadlockTrainNo==trainNo && deadlockIntersectionNo==3){
             deadlockTrainNo = 0;
             locked3 = 0;
+            pthread_cond_signal(&int3open2);
+            // pthread_cond_signal(&int4open2);
             pthread_cond_signal(&int3open);
-            pthread_cond_signal(&int4open);
-            pthread_mutex_unlock(&intersection3);
+            // pthread_cond_signal(&int4open);
             signalled = 0;
+            pthread_mutex_unlock(&intersection4);
+            pthread_mutex_unlock(&intersection3);
             return;
         }
         locked3 = 0;
         locked4 = 0;
+        pthread_cond_signal(&int3open2);
+        pthread_cond_signal(&int4open2);
         pthread_cond_signal(&int3open);
         pthread_cond_signal(&int4open);
+        pthread_mutex_unlock(&intersection4);
         pthread_mutex_unlock(&intersection3);
     }else if(firstIntersection==4){
-        // while(locked4==1){
-        //     pthread_cond_wait(&int4con, &intersection4);
-        // }
         pthread_mutex_lock(&intersection4);
-        if(deadlockTrainNo==trainNo && deadlockIntersectionNo==2){
+        pthread_mutex_lock(&intersection1);
+        if(deadlockTrainNo==trainNo && deadlockIntersectionNo==4){
             deadlockTrainNo = 0;
             locked4 = 0;
+            pthread_cond_signal(&int4open2);
+            // pthread_cond_signal(&int1open2);
             pthread_cond_signal(&int4open);
-            pthread_cond_signal(&int1open);
-            pthread_mutex_unlock(&intersection4);
+            // pthread_cond_signal(&int1open);
             signalled = 0;
+            pthread_mutex_unlock(&intersection1);
+            pthread_mutex_unlock(&intersection4);
             return;
         }
         locked4 = 0;
         locked1 = 0;
+        pthread_cond_signal(&int4open2);
+        pthread_cond_signal(&int1open2);
         pthread_cond_signal(&int4open);
         pthread_cond_signal(&int1open);
+        pthread_mutex_unlock(&intersection1);
         pthread_mutex_unlock(&intersection4);
     }else{
         if(debug==1) printf("Illegal first intersection identifier\n");
@@ -242,7 +251,6 @@ void exitLane(int firstIntersection, int secondIntersection, int trainNo) {
 
 void *trainThreadFunction(void* arg)
 {   
-    /* TODO extract arguments from the `void* arg` */
     int firstIntersection = 0;
 
     myarg_t *args = (myarg_t *) arg;
@@ -304,8 +312,7 @@ void *deadLockResolverThreadFunction(void * arg) {
     /* TODO extract arguments from the `void* arg` */
     printf("Background deadlock detector is running...\n");
     while (1) {
-        /* TODO add code to detect deadlock and resolve if any */
-        int deadLockDetected = 0; // TODO set to 1 if deadlock is detected
+        int deadLockDetected = 0; 
         if(locked1!=locked2 && locked2!=locked3 && locked3!=locked4 && locked4!=locked1 && locked1!=locked3 && locked2!=locked4 && locked1!=0 && locked2!=0 && locked3!=0 && locked4!=0) {
             if(debug==1) printf("Deadlock detected.\n");
             deadLockDetected = 1;
@@ -313,18 +320,44 @@ void *deadLockResolverThreadFunction(void * arg) {
         if (deadLockDetected) {
             pthread_mutex_lock(&deadlockResolve);
             if(signalled==0) printf("Deadlock detected. Resolving deadlock...\n");
-            /* TODO add code to resolve deadlock */
             if(debug==1) printf("I1 %d I2 %d I3 %d I4 %d\n", locked1, locked2, locked3, locked4);
             // Train T1 coming from North, waiting at intersection 1
             // Train T2 coming from West, waiting at intersection 2
             // Train T3 coming from South, waiting at intersection 3
             // Train T4 coming from East, waiting at intersection 4
             // To clear deadlock, let Train T2 pass through intersection 3
-            deadlockTrainNo = locked2;
-            deadlockIntersectionNo = 2;
+            if(signalled==0){
+                deadlockIntersectionNo = (deadlockIntersectionNo+1)%4 + 1;
+                if(deadlockIntersectionNo==1){
+                    deadlockTrainNo = locked1;
+                }else if(deadlockIntersectionNo==2){
+                    deadlockTrainNo = locked2;
+                }else if(deadlockIntersectionNo==3){
+                    deadlockTrainNo = locked3;
+                }else if(deadlockIntersectionNo==4){
+                    deadlockTrainNo = locked4;
+                }else{
+                    if(debug==1) printf("invalid deadlockIntersectionNo \n");
+                    // control shouldnever reach here
+                    return NULL;
+                }
+            }
+            if(debug==1) printf("deadlockIntersectionNo %d trainNo %d\n", deadlockIntersectionNo, deadlockTrainNo);
             deadLockDetected = 0;
             signalled = 1;
-            pthread_cond_signal(&int3open);
+            if(deadlockIntersectionNo==1){
+                pthread_cond_signal(&int2open2);
+            }else if(deadlockIntersectionNo==2){
+                pthread_cond_signal(&int3open2);
+            }else if(deadlockIntersectionNo==3){
+                pthread_cond_signal(&int4open2);
+            }else if(deadlockIntersectionNo==4){
+                pthread_cond_signal(&int1open2);
+            }else{
+                if(debug==1) printf("invalid deadlockIntersectionNo \n");
+                // control shouldnever reach here
+                return NULL;
+            }
             if(debug==1) printf("Signalled \n");
             pthread_mutex_unlock(&deadlockResolve);
         }
@@ -345,7 +378,6 @@ int main(int argc, char *argv[]) {
 
     pthread_mutex_init(&rng_mutex, NULL);
 
-    /* TODO create a thread for deadLockResolverThreadFunction */
     pthread_t dLRTFThread;
     pthread_create(&dLRTFThread, NULL, deadLockResolverThreadFunction, NULL);
 
@@ -373,13 +405,11 @@ int main(int argc, char *argv[]) {
         }
         
         if(debug==1) printf("trainDir %c no %d %d\n", argArray[num_trains].trainDir, argArray[num_trains].trainNo, num_trains);
-        /* TODO create a thread for the train using trainThreadFunction */
         pthread_create(&train_threads[num_trains], NULL, trainThreadFunction, &argArray[num_trains]);
         if(debug==1) printf("trainDir %c no %d %d\n", argArray[num_trains].trainDir, argArray[num_trains].trainNo, num_trains);
         num_trains = num_trains + 1;
     }
 
-    /* TODO: join with all train threads*/
     for(int i=0; i<num_trains; i++){
         if(debug==1) printf("Joining... \n");
         void* buf;

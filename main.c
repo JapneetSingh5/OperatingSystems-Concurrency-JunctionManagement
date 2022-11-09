@@ -25,6 +25,7 @@ volatile int locked1 = 0;
 volatile int locked2 = 0;
 volatile int locked3 = 0;
 volatile int locked4 = 0;
+volatile int signalled = 0;
 volatile int deadlockTrainNo = 0;
 volatile int deadlockIntersectionNo = 0;
 pthread_mutex_t deadlockResolve = PTHREAD_MUTEX_INITIALIZER;
@@ -158,6 +159,7 @@ void exitLane(int firstIntersection, int secondIntersection, int trainNo) {
             pthread_cond_signal(&int1open);
             pthread_cond_signal(&int2open);
             pthread_mutex_unlock(&intersection1);
+            signalled = 0;
             return;
         }
         locked1 = 0;
@@ -176,6 +178,7 @@ void exitLane(int firstIntersection, int secondIntersection, int trainNo) {
             pthread_cond_signal(&int2open);
             pthread_cond_signal(&int3open);
             pthread_mutex_unlock(&intersection2);
+            signalled = 0;
             return;
         }
         locked2 = 0;
@@ -194,6 +197,7 @@ void exitLane(int firstIntersection, int secondIntersection, int trainNo) {
             pthread_cond_signal(&int3open);
             pthread_cond_signal(&int4open);
             pthread_mutex_unlock(&intersection3);
+            signalled = 0;
             return;
         }
         locked3 = 0;
@@ -212,6 +216,7 @@ void exitLane(int firstIntersection, int secondIntersection, int trainNo) {
             pthread_cond_signal(&int4open);
             pthread_cond_signal(&int1open);
             pthread_mutex_unlock(&intersection4);
+            signalled = 0;
             return;
         }
         locked4 = 0;
@@ -301,14 +306,13 @@ void *deadLockResolverThreadFunction(void * arg) {
     while (1) {
         /* TODO add code to detect deadlock and resolve if any */
         int deadLockDetected = 0; // TODO set to 1 if deadlock is detected
-        int signalled = 0;
         if(locked1!=locked2 && locked2!=locked3 && locked3!=locked4 && locked4!=locked1 && locked1!=locked3 && locked2!=locked4 && locked1!=0 && locked2!=0 && locked3!=0 && locked4!=0) {
             if(debug==1) printf("Deadlock detected.\n");
             deadLockDetected = 1;
         }
         if (deadLockDetected) {
             pthread_mutex_lock(&deadlockResolve);
-            printf("Deadlock detected. Resolving deadlock...\n");
+            if(signalled==0) printf("Deadlock detected. Resolving deadlock...\n");
             /* TODO add code to resolve deadlock */
             if(debug==1) printf("I1 %d I2 %d I3 %d I4 %d\n", locked1, locked2, locked3, locked4);
             // Train T1 coming from North, waiting at intersection 1

@@ -295,20 +295,21 @@ void *trainThreadFunction(void* arg)
         printf("Illegal direction\n");
         return NULL;
     }
-    printf("First intersection init'd to %d\n", firstIntersection);
-    printf("Second intersection init'd to %d\n", secondIntersection);
+
+    // printf("First intersection init'd to %d\n", firstIntersection);
+    // printf("Second intersection init'd to %d\n", secondIntersection);
 
     usleep(thread_safe_rng(0, 10000)); // start at random time
 
 
     arriveLane(firstIntersection, trainNo);
     printf("Train Arrived at the lane from the %s direction\n", trainDir);
-
+    printf("Train %d arrived %s\n", trainNo, trainDir);
 
 
     crossLane(firstIntersection, secondIntersection, trainNo);
     printf("Train Exited the lane from the %s direction\n", trainDirExit);
-    printf("Train %d exitd \n", trainNo);
+    printf("Train %d exitd %s\n", trainNo, trainDirExit);
     exitLane(firstIntersection, secondIntersection, trainNo);
 
 

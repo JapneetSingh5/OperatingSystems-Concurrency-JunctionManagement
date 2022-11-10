@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
+// final submission - 10/11/2022
 
 int debug = 0;
 pthread_mutex_t rng_mutex;
@@ -261,28 +262,28 @@ void *trainThreadFunction(void* arg)
     int secondIntersection = 0;
 
     char* trainDir = NULL; // TODO set the direction of the train: North/South/East/West.
-    char* trainDirExit = NULL; // TODO set the direction of the train: North/South/East/West.
+    // char* trainDirExit = NULL; // TODO set the direction of the train: North/South/East/West.
 
     if(direction=='N'){
         firstIntersection = 1;
         secondIntersection = 2;
         trainDir = "North";
-        trainDirExit = "South";
+        // trainDirExit = "South";
     }else if(direction=='E'){
         firstIntersection = 4;
         secondIntersection = 1; 
         trainDir = "East";
-        trainDirExit = "West";       
+        // trainDirExit = "West";       
     }else if(direction=='S'){
         firstIntersection = 3;
         secondIntersection = 4;
         trainDir = "South";
-        trainDirExit = "North";
+        // trainDirExit = "North";
     }else if(direction=='W'){
         firstIntersection = 2;
         secondIntersection = 3;
         trainDir = "West";
-        trainDirExit = "East";
+        // trainDirExit = "East";
     }else{
         printf("Illegal direction\n");
         return NULL;
@@ -300,8 +301,8 @@ void *trainThreadFunction(void* arg)
 
 
     crossLane(firstIntersection, secondIntersection, trainNo);
-    printf("Train Exited the lane from the %s direction\n", trainDirExit);
-    if(debug==1) printf("Train %d exitd %s\n", trainNo, trainDirExit);
+    printf("Train Exited the lane from the %s direction\n", trainDir);
+    if(debug==1) printf("Train %d exitd %s\n", trainNo, trainDir);
     exitLane(firstIntersection, secondIntersection, trainNo);
 
 
@@ -310,7 +311,7 @@ void *trainThreadFunction(void* arg)
 
 void *deadLockResolverThreadFunction(void * arg) {
     /* TODO extract arguments from the `void* arg` */
-    printf("Background deadlock detector is running...\n");
+    if(debug==1) printf("Background deadlock detector is running...\n");
     while (1) {
         int deadLockDetected = 0; 
         if(locked1!=locked2 && locked2!=locked3 && locked3!=locked4 && locked4!=locked1 && locked1!=locked3 && locked2!=locked4 && locked1!=0 && locked2!=0 && locked3!=0 && locked4!=0) {
